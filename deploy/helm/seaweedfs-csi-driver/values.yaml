@@ -15,6 +15,14 @@ tlsSecret: ""
 #concurrentWriters: 128
 #concurrentReaders: 128
 
+# Extra flags appended to every weed mount command. Arguments managed by the
+# CSI driver, such as -dir and -filer, cannot be overridden here.
+mountExtraArgs: []
+#  - -debug
+#  - -debug.port=6062
+#  - -readerCacheSizeMB=256
+#  - -memoryLimitMB=768
+
 # Security configuration for SeaweedFS security.toml
 # Mounts security.toml to /etc/seaweedfs/security.toml in seaweedfs-mount
 # and csi-seaweedfs-plugin containers, enabling JWT / gRPC / HTTP security.

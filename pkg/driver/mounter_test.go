@@ -39,3 +39,29 @@ func TestInitialCollectionQuotaMBDisablesOneByteSentinel(t *testing.T) {
 		t.Fatalf("initialCollectionQuotaMB = %q, want empty", got)
 	}
 }
+
+func TestBuildMountArgsPreservesExtraArgs(t *testing.T) {
+	extra := []string{"-debug", "-debug.port=6062", "-readerCacheSizeMB=256", "-memoryLimitMB=768", "-volumeName=name with spaces"}
+	mounter := &mountServiceMounter{driver: &SeaweedFsDriver{MountExtraArgs: extra}, volumeID: "/buckets/test", readOnly: true}
+	args, err := mounter.buildMountArgs("/staging", "/cache", "/socket", []string{"filer:8888"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(args[len(args)-len(extra):], extra) {
+		t.Fatalf("extra args changed: %v", args)
+	}
+	for _, required := range []string{"-dir=/staging", "-localSocket=/socket", "-readOnly"} {
+		if !slices.Contains(args, required) {
+			t.Errorf("missing %s in %v", required, args)
+		}
+	}
+}
+
+func TestBuildMountArgsRejectsManagedOrPositionalExtraArgs(t *testing.T) {
+	for _, arg := range []string{"", "mount", "--", "-", "-debug.port 6062", "---debug", "-dir=/other", "-readOnly=false", "-filer.path=/other", "-collectionQuotaMB=0"} {
+		mounter := &mountServiceMounter{driver: &SeaweedFsDriver{MountExtraArgs: []string{arg}}, volumeID: "/buckets/test"}
+		if _, err := mounter.buildMountArgs("/staging", "/cache", "/socket", []string{"filer:8888"}); err == nil {
+			t.Errorf("accepted %q", arg)
+		}
+	}
+}

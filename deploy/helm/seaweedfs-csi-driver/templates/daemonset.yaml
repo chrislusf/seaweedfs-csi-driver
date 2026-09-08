@@ -73,6 +73,9 @@ spec:
             {{- with .Values.concurrentReaders }}
             - --concurrentReaders={{ . }}
             {{- end }}
+            {{- with .Values.mountExtraArgs }}
+            - {{ printf "--mountExtraArgs=%s" (toJson .) | quote }}
+            {{- end }}
             {{- with .Values.cacheCapacityMB }}
             - --cacheCapacityMB={{ . }}
             {{- end }}

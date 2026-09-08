@@ -42,6 +42,7 @@ type SeaweedFsDriver struct {
 	grpcDialOption    grpc.DialOption
 	ConcurrentWriters int
 	ConcurrentReaders int
+	MountExtraArgs    []string
 	CacheCapacityMB   int
 	CacheMetaTtlSec   int
 	CacheDir          string
