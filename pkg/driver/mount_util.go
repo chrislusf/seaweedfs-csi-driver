@@ -6,11 +6,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/seaweedfs/seaweedfs-csi-driver/pkg/mountmanager"
 	"github.com/seaweedfs/seaweedfs/weed/glog"
 	"k8s.io/mount-utils"
 )
 
 var mountutil = mount.New("")
+
+var lazyUnmount = mountmanager.LazyUnmount
 
 // isStagingPathHealthy checks if the staging path has a healthy FUSE mount.
 // It returns true if the path is mounted and accessible, false otherwise.
@@ -78,8 +81,13 @@ func isStagingPathHealthy(stagingPath string) bool {
 // cannot propagate deletes through a live FUSE.
 func cleanupCorruptedStagingPath(stagingPath string) error {
 	if err := mount.CleanupMountPoint(stagingPath, mountutil, true); err != nil {
-		glog.Warningf("failed to cleanup corrupted mount point %s: %v", stagingPath, err)
-		return err
+		glog.Warningf("standard cleanup of corrupted staging path %s failed: %v; trying lazy unmount", stagingPath, err)
+		if lazyErr := lazyUnmount(stagingPath); lazyErr != nil {
+			return fmt.Errorf("cleanup corrupted mount %s: cleanup %v, lazy unmount %v", stagingPath, err, lazyErr)
+		}
+		if err := os.RemoveAll(stagingPath); err != nil && !os.IsNotExist(err) {
+			return err
+		}
 	}
 	glog.Infof("successfully cleaned up corrupted staging path %s", stagingPath)
 	return nil
