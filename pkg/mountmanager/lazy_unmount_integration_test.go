@@ -3,6 +3,7 @@
 package mountmanager
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -40,6 +41,9 @@ func TestIntegrationLazyUnmountDetachesBusyMount(t *testing.T) {
 	}
 
 	if err := unix.Mount("tmpfs", staging, "tmpfs", 0, ""); err != nil {
+		if errors.Is(err, unix.EPERM) {
+			t.Skipf("skipping: mount requires CAP_SYS_ADMIN: %v", err)
+		}
 		t.Fatalf("mount tmpfs at %s: %v", staging, err)
 	}
 	defer unix.Unmount(staging, unix.MNT_DETACH)
@@ -56,6 +60,8 @@ func TestIntegrationLazyUnmountDetachesBusyMount(t *testing.T) {
 
 	if err := unix.Unmount(staging, 0); err == nil {
 		t.Skip("regular umount succeeded; cannot simulate the busy-stale condition")
+	} else if !errors.Is(err, unix.EBUSY) {
+		t.Fatalf("expected EBUSY from regular umount, got: %v", err)
 	}
 
 	if err := LazyUnmount(staging); err != nil {
