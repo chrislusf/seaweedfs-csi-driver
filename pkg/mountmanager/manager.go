@@ -228,7 +228,7 @@ func ensureTargetClean(targetPath string) error {
 			if unmountErr := kubeMounter.Unmount(targetPath); unmountErr != nil {
 				glog.Warningf("unmount corrupted mount %s failed: %v; trying lazy unmount", targetPath, unmountErr)
 				if lazyErr := lazyUnmount(targetPath); lazyErr != nil {
-					return fmt.Errorf("failed to unmount corrupted mount %s: %w", targetPath, unmountErr)
+					return fmt.Errorf("failed to unmount corrupted mount %s: regular unmount: %v; lazy unmount: %w", targetPath, unmountErr, lazyErr)
 				}
 			}
 		} else {
